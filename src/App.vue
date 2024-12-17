@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Address, fromNano } from '@ton/core'
 import { BclSDK, simpleTonapiProvider } from 'ton-bcl-sdk'
-import { Api, HttpClient } from 'tonapi-sdk-js'
+import { Api, HttpClient, JettonMetadata } from 'tonapi-sdk-js'
 import { Decimal } from 'decimal.js'
 import { computed, ref, watch } from 'vue';
 
@@ -12,6 +12,7 @@ interface JettonInfo {
   allSupply: Decimal;
   totalSupply: Decimal;
   supplyPercent: Decimal;
+  meta: JettonMetadata
 }
 
 const TON_API_TOKEN = '' // optional
@@ -74,8 +75,16 @@ watch(jettonAddressInfo, async (addressInfo) => {
 }, { immediate: true })
 
 const jettonInfoList = computed(() => jettonInfo.value ? {
-  jettonAddress: jettonInfo.value.jettonAddress,
-  list: [
+  address: jettonInfo.value.jettonAddress,
+  image: jettonInfo.value.info.meta.image,
+  metaList: [
+    { title: 'Address', value: jettonInfo.value.jettonAddress },
+    { title: 'Ticker', value: jettonInfo.value.info.meta.symbol },
+    { title: 'Name', value: jettonInfo.value.info.meta.name },
+    { title: 'Symbol', value: jettonInfo.value.info.meta.symbol },
+    { title: 'Description', value: jettonInfo.value.info.meta.description },
+  ],
+  infoList: [
     { title: 'Total TON', value: jettonInfo.value.info.totalTon.toFixed(2) },
     { title: 'TON Collected', value: jettonInfo.value.info.tonCollected.toFixed(2) },
     { title: 'TON Collected %', value: jettonInfo.value.info.tonCollectedPercent.toFixed(2) },
@@ -101,6 +110,7 @@ async function getMemepadJettonInfo(jettonAddress: string): Promise<JettonInfo> 
   })
 
   const bclData = await sdk.openCoin(address).getBclData()
+  const jettonInfo = await tonApiClient.jettons.getJettonInfo(address.toString())
 
   const tonCollected = fromNanoToDecimal(bclData.tonLiqCollected)
   const fullPriceTonFees = fromNanoToDecimal(bclData.fullPriceTonFees)
@@ -124,12 +134,14 @@ async function getMemepadJettonInfo(jettonAddress: string): Promise<JettonInfo> 
     allSupply,
     totalSupply,
     supplyPercent,
+
+    meta: jettonInfo.metadata,
   }
 }
 </script>
 
 <template>
-  <div class="p-10 max-w-[600px] mx-auto">
+  <div class="p-10 max-w-[800px] mx-auto overflow-hidden">
     <label class="flex flex-col gap-2" :class="{ 'text-red-600': !jettonAddressInfo.valid }">
       <span class="text-lg">
         {{ `jetton address${!jettonAddressInfo.valid ? '(invalid)' : ''}:` }}
@@ -139,10 +151,19 @@ async function getMemepadJettonInfo(jettonAddress: string): Promise<JettonInfo> 
     </label>
 
     <div v-if="jettonInfoList" class="flex flex-col gap-4 mt-10">
-      <div class="text-md font-bold">{{ `jetton info for address: ${jettonInfoList.jettonAddress}` }}</div>
+      <div class="flex items-center gap-6">
+        <img :src="jettonInfoList.image" class="w-24 h-24 rounded-full" />
+
+        <ul class="flex flex-col gap-2 w-full">
+          <li v-for="item in jettonInfoList.metaList" :key="item.title" class="flex items-center gap-2 justify-between">
+            <span class="text-md text-gray-500">{{ item.title }}</span>
+            <span class="text-md overflow-hidden text-ellipsis text-right">{{ item.value }}</span>
+          </li>
+        </ul>
+      </div>
 
       <ul class="flex flex-col gap-2">
-        <li v-for="item in jettonInfoList.list" :key="item.title" class="flex gap-2 items-center justify-between">
+        <li v-for="item in jettonInfoList.infoList" :key="item.title" class="flex gap-2 items-center justify-between">
           <span class="text-lg">{{ item.title }}:</span>
           <span class="text-xl">{{ item.value }}</span>
         </li>
