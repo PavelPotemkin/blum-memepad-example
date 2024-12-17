@@ -79,9 +79,8 @@ const jettonInfoList = computed(() => jettonInfo.value ? {
   image: jettonInfo.value.info.meta.image,
   metaList: [
     { title: 'Address', value: jettonInfo.value.jettonAddress },
-    { title: 'Ticker', value: jettonInfo.value.info.meta.symbol },
-    { title: 'Name', value: jettonInfo.value.info.meta.name },
     { title: 'Symbol', value: jettonInfo.value.info.meta.symbol },
+    { title: 'Name', value: jettonInfo.value.info.meta.name },
     { title: 'Description', value: jettonInfo.value.info.meta.description },
   ],
   infoList: [
